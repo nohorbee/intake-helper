@@ -1,0 +1,180 @@
+<html>
+  <head>
+
+  	<script>
+
+  		var currentTimeInCurrentLocation, deadlineInCurrentLocation, estimatedEffort, leadTime, deadLineInRequesterLocation;
+  		var signOfTimezoneInCurrentLocation = "-";
+  		var currentCity = "Buenos Aires";
+  		var timezoneInCurrentLocation = "03:00";
+
+  		var TZ = {};
+
+  		TZ["New York"] = "-05:00"
+  		TZ["London"] = "+00:00"
+  		TZ[currentCity] = signOfTimezoneInCurrentLocation + timezoneInCurrentLocation;
+  		TZ["Bangalore"] = "+05:30"
+  		TZ["Beijing"] = "+08:00"
+  		TZ["Berlin"] = "+01:00"
+  		TZ["Bombai"] = "+05:30"		
+		TZ["Chicago"] = "-06:00"
+  		TZ["Los Angeles"] = "-08:00"
+		TZ["Madrid"] = "+01:00"
+		TZ["Moscu"] = "+03:00"
+		TZ["San Francisco"] = "-08:00"
+		TZ["Singapur"] = "+08:00"
+		TZ["Sydney"]  = "+10:00"
+		TZ["Tokio"] = "+09:00"
+		
+		
+		
+
+
+		function loadTimezone(lst) {
+			document.getElementById("txtDestinationTimezone").value = lst.value;
+		}
+
+
+		function loadCurrentTime() {
+			currentTimeInCurrentLocation = new Date().getTime();
+  			document.getElementById("txtCurrentTimeInCurrentLocation").innerText =  new Date(currentTimeInCurrentLocation);
+		}
+
+  		function initialize() {
+  			loadCurrentTime()
+  			for (var i in TZ) {
+  				var option = document.createElement("option");
+  				option.value = TZ[i];
+  				option.text = i + " " + TZ[i];
+  				document.getElementById("lstTimezones").add(option);
+  			}
+  			loadTimezone(document.getElementById("lstTimezones"));
+
+
+
+  		}
+
+  		function calculate () {
+
+  			loadCurrentTime();
+
+  			timeRe = /^\d{1,2}:\d{2}?$/;  // validates regex for xx:xx
+  			timeZoneRe = /^[+-]\d{1,2}:\d{2}?$/;
+  			
+			if (document.getElementById("txtLeadTime").value.trim().length == 0) {
+				leadTime = "0:00";
+			} else {
+				if(!document.getElementById("txtLeadTime").value.match(timeRe)) {
+			      alert("Invalid time format: ");
+			      return false;
+			    }
+			    leadTime = document.getElementById("txtLeadTime").value;
+			}
+
+			var leadTimeHMArray = leadTime.split(":");
+		    var leadTimeTotalMins = 1*leadTimeHMArray[0] * 60 + 1*leadTimeHMArray[1];
+		    var leadTimeInTimeStamp = leadTimeTotalMins * 60 * 1000;
+					    
+
+		    if(!document.getElementById("txtEstimatedEffort").value.match(timeRe)) {
+		      alert("Invalid time format: ");
+		      return false;
+		    }
+
+		    var effortHMArray = document.getElementById("txtEstimatedEffort").value.split(":");
+		    var effortTotalMins = 1*effortHMArray[0] * 60 + 1*effortHMArray[1];
+		    var effortInTimeStamp = effortTotalMins * 60 * 1000;
+
+		    if(!document.getElementById("txtRequestedDeadLineInCurrentLocation").value.match(timeRe)) {
+		      alert("Invalid time format: ");
+		      return false;
+		    }
+
+		    var requestedDeadlineHMArray = document.getElementById("txtRequestedDeadLineInCurrentLocation").value.split(":");
+		    var requestedDeadlineTotalMins = 1*requestedDeadlineHMArray[0] * 60 + 1*effortHMArray[1];
+		    var requestedDeadlineInTimeStamp = requestedDeadlineTotalMins * 60 * 1000;
+
+
+			if(!document.getElementById("txtDestinationTimezone").value.match(timeZoneRe)) {
+		      alert("Invalid timezone format: ");
+		      return false;
+		    }
+
+		    var destinationTimezone = document.getElementById("txtDestinationTimezone").value;
+
+		    var signOfDestinationTimezone = destinationTimezone.substring(0,1);
+		    destinationTimezone = destinationTimezone.substring(1);
+
+		    var destinationTimezoneHMArray = destinationTimezone.split(":");
+		    var destinationTimezoneTotalMins = 1*destinationTimezoneHMArray[0] * 60 + 1*destinationTimezoneHMArray[1];
+		    var destinationTimezonetInTimeStamp = destinationTimezoneTotalMins * 60 * 1000;
+		    if (signOfDestinationTimezone == "-") {
+		    	destinationTimezonetInTimeStamp = -1*destinationTimezonetInTimeStamp 
+		    }
+
+
+// el current location esta hardcodeado al principio
+
+		    var timezoneInCurrentLocationHMArray = timezoneInCurrentLocation.split(":");
+		    var timezoneInCurrentLocationTotalMins = 1*timezoneInCurrentLocationHMArray[0] * 60 + 1*timezoneInCurrentLocationHMArray[1];
+		    var timezonetInCurrentLicationInTimeStamp = timezoneInCurrentLocationTotalMins * 60 * 1000;
+
+		    
+		    if (signOfTimezoneInCurrentLocation == "-") {
+		    	timezonetInCurrentLicationInTimeStamp = -1*timezonetInCurrentLicationInTimeStamp
+		    }
+
+
+		    var timeZoneDifference = destinationTimezonetInTimeStamp - timezonetInCurrentLicationInTimeStamp;
+
+		    
+		    deadlineInCurrentLocation =  currentTimeInCurrentLocation + effortInTimeStamp + leadTimeInTimeStamp;
+		    deadLineInRequesterLocation = deadlineInCurrentLocation + timeZoneDifference;
+		    document.getElementById("txtDeadLineInCurrentLocation").value = formatDate(new Date(deadlineInCurrentLocation));
+		    document.getElementById("txtDeadLineInRequesterLocation").value = new Date(deadLineInRequesterLocation);
+
+		    var AoD = requestedDeadlineInTimeStamp - deadlineInCurrentLocation;
+		    document.getElementById("txtAoD").value = AoD;
+
+
+  		}
+
+
+  		function formatDate(date) {
+  			var dayOfTheWeek = date.getDay();
+  			var hours = date.getHours();
+  			var minutes = date.getMinutes();
+  			var ampm = (hours < 12 ? "AM" : "PM");
+
+  			return ("<b>"+ hours +":"+ minutes +" "+ ampm + "</b> (of "+ dayOfTheWeek +")");
+
+  		}
+
+
+  	</script>
+
+  </head>
+  <body onload="initialize();">
+  	<table width="100%"><tr><td align="right"><div id="txtCurrentTimeInCurrentLocation" > </div></td></tr></table>
+  	
+  	<br />
+  	<label for="txtEstimatedEffort">Estimated Effort</label><input type="text" id="txtEstimatedEffort" size="50"/><br />
+  	<label for="txtLeadTime">LeadTime</label><input type="text" id="txtLeadTime" size="50"/><br />
+  	<label for="txtDestinationTimezone">Timezone of the requester</label><select id="lstTimezones" onchange="loadTimezone(this);"></select><input type="text" id="txtDestinationTimezone" size="50"/><br />
+  	<label for="txtRequestedDeadLineInCurrentLocation">Requested Deadline in current location</label><input type="text" id="txtRequestedDeadLineInCurrentLocation" size="50"/><br />
+  	<input type="button" id="btnCalculate" value="Calculate" onclick="calculate();"/><br />
+  	
+<hr />
+
+  	
+  	<label for="txtDeadLineInCurrentLocation">Deadline in current location</label><input type="text" id="txtDeadLineInCurrentLocation" size="50"/><br />
+  	<label for="txtDeadLineInRequesterLocation">Deadline in requester location</label><input type="text" id="txtDeadLineInRequesterLocation" size="50"/><br />
+  	
+  	<label for="txtAoD">Advice of Delay</label><input type="text" id="txtAoD" size="50"/><br />
+  	
+
+  	
+
+
+  </body>
+</html>
