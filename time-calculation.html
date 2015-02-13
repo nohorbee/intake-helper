@@ -2,11 +2,82 @@
   <head>
 
   	<script>
+  		Date.prototype.getAMPM = function() {
+  			return (this.getHours() < 12 ? "AM" : "PM");
+  		}
+
+  		function getTwoDigits(number) {
+  			var retval = 1*number;
+  			if (retval < 10)
+		    {
+		        return ("0" + retval.toString());
+		    }
+		    else
+		    {
+		        return retval.toString();
+		    }
+
+  		}
+
+  		Date.prototype.getHoursTwoDigitsAMPM = function()
+		{
+		    var retval = this.getHours();
+		    retval = (retval < 12 ? retval : retval - 12);
+		    if (retval < 10)
+		    {
+		        return ("0" + retval.toString());
+		    }
+		    else
+		    {
+		        return retval.toString();
+		    }
+		}
+
+		Date.prototype.getMinutesTwoDigits = function()
+		{
+		    var retval =  this.getMinutes().toString();
+		    if (retval < 10)
+		    {
+		        return ("0" + retval.toString());
+		    }
+		    else
+		    {
+		        return retval.toString();
+		    }
+		}
+
+		function autoFormatTime(control) {
+			var value = control.value;
+			var newValue = "";
+			if (validateTimeFormat(value) || isNaN(value)) return false;
+			if (value.length==1) {
+				 newValue = "0:0" + value;
+			}
+			if (value.length==2) {
+				newValue = "0:" + value;
+			}
+			if (value.length>2) {
+				var hours = value.substring(value.length-4,value.length-2);
+				var minutes = value.substring(value.length-2);
+				newValue = ""+ hours + ":" + minutes;
+			}
+			control.value = newValue;
+		} 
 
   		var currentTimeInCurrentLocation, deadlineInCurrentLocation, estimatedEffort, leadTime, deadLineInRequesterLocation;
   		var signOfTimezoneInCurrentLocation = "-";
   		var currentCity = "Buenos Aires";
   		var timezoneInCurrentLocation = "03:00";
+  		var dayOfRequestedDeadlineIsToday = true;
+
+  		var days = {};
+  		days[0] = "Sunday";
+  		days[1] = "Monday";
+  		days[2] = "Tuesday";
+  		days[3] = "Wednesday";
+  		days[4] = "Thursday";
+  		days[5] = "Friday";
+  		days[6] = "Saturday";
 
   		var TZ = {};
 
@@ -26,10 +97,18 @@
 		TZ["Sydney"]  = "+10:00"
 		TZ["Tokio"] = "+09:00"
 		
-		
-		
-
-
+		function calculateRequestedDeadlineDay(cmp) {
+			var aRequestedDeadline = cmp.value.split(":");
+			var currentDate = new Date(currentTimeInCurrentLocation);
+			var dateOfRequestedDeadline = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), aRequestedDeadline[0], aRequestedDeadline[1], currentDate.getSeconds(), currentDate.getMilliseconds());
+			if (dayOfRequestedDeadlineIsToday = !(dateOfRequestedDeadline < currentDate)) {
+				document.getElementById("txtDayOfRequestedDeadline").innerHTML = "(of Today)";
+			} else {
+				document.getElementById("txtDayOfRequestedDeadline").innerHTML = "(of Tomorrow)";		
+				dateOfRequestedDeadline.setDate(dateOfRequestedDeadline.getDate() + 1);
+			}
+			return dateOfRequestedDeadline;
+		}
 		function loadTimezone(lst) {
 			document.getElementById("txtDestinationTimezone").value = lst.value;
 		}
@@ -37,10 +116,26 @@
 
 		function loadCurrentTime() {
 			currentTimeInCurrentLocation = new Date().getTime();
-  			document.getElementById("txtCurrentTimeInCurrentLocation").innerText =  new Date(currentTimeInCurrentLocation);
+  			document.getElementById("txtCurrentTimeInCurrentLocation").innerHTML =  new Date(currentTimeInCurrentLocation);
+		}
+
+		function initializeTextBoxes() {
+			var inp = document.getElementsByTagName('input');
+			for(var i in inp){
+			    if(inp[i].type == "text"){
+			        inp[i].onfocus = inp[i].select;
+			        inp[i].onkeyup = function(event){
+						event = event || window.event
+					    if(event.keyCode == 13){
+					        calculate();
+					    }
+					}
+			    }
+			}
 		}
 
   		function initialize() {
+  			initializeTextBoxes();
   			loadCurrentTime()
   			for (var i in TZ) {
   				var option = document.createElement("option");
@@ -54,17 +149,21 @@
 
   		}
 
+  		function validateTimeFormat(value) {
+  			timeRe = /^\d{1,2}:\d{2}?$/;  // validates regex for xx:xx
+  			return value.match(timeRe);
+  		}
+
   		function calculate () {
 
   			loadCurrentTime();
 
-  			timeRe = /^\d{1,2}:\d{2}?$/;  // validates regex for xx:xx
   			timeZoneRe = /^[+-]\d{1,2}:\d{2}?$/;
   			
 			if (document.getElementById("txtLeadTime").value.trim().length == 0) {
 				leadTime = "0:00";
 			} else {
-				if(!document.getElementById("txtLeadTime").value.match(timeRe)) {
+				if(!validateTimeFormat(document.getElementById("txtLeadTime").value)) {
 			      alert("Invalid time format: ");
 			      return false;
 			    }
@@ -76,7 +175,7 @@
 		    var leadTimeInTimeStamp = leadTimeTotalMins * 60 * 1000;
 					    
 
-		    if(!document.getElementById("txtEstimatedEffort").value.match(timeRe)) {
+		    if(!validateTimeFormat(document.getElementById("txtEstimatedEffort").value)) {
 		      alert("Invalid time format: ");
 		      return false;
 		    }
@@ -85,7 +184,7 @@
 		    var effortTotalMins = 1*effortHMArray[0] * 60 + 1*effortHMArray[1];
 		    var effortInTimeStamp = effortTotalMins * 60 * 1000;
 
-		    if(!document.getElementById("txtRequestedDeadLineInCurrentLocation").value.match(timeRe)) {
+		    if(!validateTimeFormat(document.getElementById("txtRequestedDeadLineInCurrentLocation").value)) {
 		      alert("Invalid time format: ");
 		      return false;
 		    }
@@ -127,14 +226,28 @@
 
 		    var timeZoneDifference = destinationTimezonetInTimeStamp - timezonetInCurrentLicationInTimeStamp;
 
-		    
 		    deadlineInCurrentLocation =  currentTimeInCurrentLocation + effortInTimeStamp + leadTimeInTimeStamp;
 		    deadLineInRequesterLocation = deadlineInCurrentLocation + timeZoneDifference;
-		    document.getElementById("txtDeadLineInCurrentLocation").value = formatDate(new Date(deadlineInCurrentLocation));
-		    document.getElementById("txtDeadLineInRequesterLocation").value = new Date(deadLineInRequesterLocation);
+		    document.getElementById("txtDeadLineInCurrentLocation").innerHTML = formatDate(new Date(deadlineInCurrentLocation));
+		    document.getElementById("txtDeadLineInRequesterLocation").innerHTML = formatDate(new Date(deadLineInRequesterLocation));
 
-		    var AoD = requestedDeadlineInTimeStamp - deadlineInCurrentLocation;
-		    document.getElementById("txtAoD").value = AoD;
+		    var dateToCompare = calculateRequestedDeadlineDay(document.getElementById("txtRequestedDeadLineInCurrentLocation")).getTime();
+		    var AoDMilliseconds =  deadlineInCurrentLocation - dateToCompare;
+		    var AoD = AoDMilliseconds / 1000 / 60 / 60;
+		    
+		    var AoDHours = Math.floor(AoD);
+		    if (AoDHours<0) {
+				document.getElementById("txtAoD").innerHTML = "<b>There is no delay!</b>";		    	
+		    } else {
+			    var AoDdec = AoD - AoDHours;
+			    var AoDMinutes = Math.round(AoDdec * 60);
+			    if (AoDMinutes<=0 && AoDHours<=0) {
+			    	document.getElementById("txtAoD").innerHTML = "<b>There is no delay!</b>";		    	
+			    } else {
+			    	document.getElementById("txtAoD").innerHTML = getTwoDigits(AoDHours) + ":" + getTwoDigits(AoDMinutes);	
+			    }
+			    
+			}
 
 
   		}
@@ -142,35 +255,63 @@
 
   		function formatDate(date) {
   			var dayOfTheWeek = date.getDay();
-  			var hours = date.getHours();
-  			var minutes = date.getMinutes();
-  			var ampm = (hours < 12 ? "AM" : "PM");
+  			var hours = date.getHoursTwoDigitsAMPM();
+  			var minutes = date.getMinutesTwoDigits();
+  			
 
-  			return ("<b>"+ hours +":"+ minutes +" "+ ampm + "</b> (of "+ dayOfTheWeek +")");
+  			return ("<b>"+ hours +":"+ minutes +" "+ date.getAMPM() + "</b> (of "+ days[dayOfTheWeek] +")");
 
   		}
 
 
+
   	</script>
+  	<style>
+  		body, table tr td{
+  			font-family: helvetica, verdana;
+  			font-size: 12px;
+  		}
+  		input[type="text"] {
+  			width: 60px;
+  		}
+  	</style>
 
   </head>
   <body onload="initialize();">
   	<table width="100%"><tr><td align="right"><div id="txtCurrentTimeInCurrentLocation" > </div></td></tr></table>
   	
-  	<br />
-  	<label for="txtEstimatedEffort">Estimated Effort</label><input type="text" id="txtEstimatedEffort" size="50"/><br />
-  	<label for="txtLeadTime">LeadTime</label><input type="text" id="txtLeadTime" size="50"/><br />
-  	<label for="txtDestinationTimezone">Timezone of the requester</label><select id="lstTimezones" onchange="loadTimezone(this);"></select><input type="text" id="txtDestinationTimezone" size="50"/><br />
-  	<label for="txtRequestedDeadLineInCurrentLocation">Requested Deadline in current location</label><input type="text" id="txtRequestedDeadLineInCurrentLocation" size="50"/><br />
-  	<input type="button" id="btnCalculate" value="Calculate" onclick="calculate();"/><br />
+  	<table>
+  		<tr>
+  			<td><label for="txtDestinationTimezone">Timezone of the requester</label></td>
+  			<td><select id="lstTimezones" onchange="loadTimezone(this);"></select><input type="text" id="txtDestinationTimezone"/></td>
+  		</tr>
+  		<tr>
+  			<td><label for="txtEstimatedEffort">Estimated Effort</label></td>
+  			<td><input type="text" id="txtEstimatedEffort" size="50" onchange="autoFormatTime(this);" value="0:00"/></td>
+  		</tr>
+  		<tr>
+  			<td><label for="txtLeadTime">LeadTime</label></td>
+  			<td><input type="text" id="txtLeadTime" size="50" onchange="autoFormatTime(this);" value="0:00"/></td>
+  		</tr>
+  		<tr>
+  			<td><label for="txtRequestedDeadLineInCurrentLocation">Requested Deadline in current location</label></td>
+  			<td><input type="text" id="txtRequestedDeadLineInCurrentLocation" size="50" onchange="autoFormatTime(this); calculateRequestedDeadlineDay(this);"  value="0:00"/><span id="txtDayOfRequestedDeadline"></span></td>
+  		</tr>
+  		<tr>
+  			<td colspan="2">
+  				<input type="button" id="btnCalculate" value="Calculate" onclick="calculate();"/><br />
+  			</td>
+  		</tr>
+  	</table>
+
   	
 <hr />
 
   	
-  	<label for="txtDeadLineInCurrentLocation">Deadline in current location</label><input type="text" id="txtDeadLineInCurrentLocation" size="50"/><br />
-  	<label for="txtDeadLineInRequesterLocation">Deadline in requester location</label><input type="text" id="txtDeadLineInRequesterLocation" size="50"/><br />
+  	<label for="txtDeadLineInCurrentLocation">Deadline in current location</label><div id="txtDeadLineInCurrentLocation"></div><br />
+  	<label for="txtDeadLineInRequesterLocation">Deadline in requester location</label><div id="txtDeadLineInRequesterLocation" /></div><br />
   	
-  	<label for="txtAoD">Advice of Delay</label><input type="text" id="txtAoD" size="50"/><br />
+  	<label for="txtAoD">Advice of Delay</label><div id="txtAoD" /></div><br />
   	
 
   	
