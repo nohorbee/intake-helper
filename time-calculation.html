@@ -4,10 +4,11 @@
   	<script>
 
 	  	if(typeof String.prototype.trim !== 'function') {
-		  String.prototype.trim = function() {
-		    return this.replace(/^\s+|\s+$/g, ''); 
-		  }
+			String.prototype.trim = function() {
+				return this.replace(/^\s+|\s+$/g, ''); 
+			}
 		}
+  		
   		Date.prototype.getAMPM = function() {
   			return (this.getHours() < 12 ? "AM" : "PM");
   		}
@@ -52,6 +53,30 @@
 		    }
 		}
 
+		Date.prototype.getDateTwoDigits = function() {
+			var retval =  this.getDate().toString();
+		    if (retval < 10)
+		    {
+		        return ("0" + retval.toString());
+		    }
+		    else
+		    {
+		        return retval.toString();
+		    }
+		};
+
+		Date.prototype.getMonthTwoDigits = function() {
+			var retval =  (this.getMonth() +1 ).toString();
+		    if (retval < 10)
+		    {
+		        return ("0" + retval.toString());
+		    }
+		    else
+		    {
+		        return retval.toString();
+		    }
+		};
+
 		function autoFormatTime(control) {
 			var value = control.value;
 			var newValue = "";
@@ -93,11 +118,11 @@
   		TZ["Bangalore"] = "+05:30"
   		TZ["Beijing"] = "+08:00"
   		TZ["Berlin"] = "+01:00"
-  		TZ["Bombai"] = "+05:30"		
-		TZ["Chicago"] = "-06:00"
+  		TZ["Chicago"] = "-06:00"
   		TZ["Los Angeles"] = "-08:00"
 		TZ["Madrid"] = "+01:00"
 		TZ["Moscu"] = "+03:00"
+		TZ["Mumbai"] = "+05:30"		
 		TZ["San Francisco"] = "-08:00"
 		TZ["Singapur"] = "+08:00"
 		TZ["Sydney"]  = "+10:00"
@@ -108,11 +133,12 @@
 			var currentDate = new Date(currentTimeInCurrentLocation);
 			var dateOfRequestedDeadline = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), aRequestedDeadline[0], aRequestedDeadline[1], currentDate.getSeconds(), currentDate.getMilliseconds());
 			if (dayOfRequestedDeadlineIsToday = !(dateOfRequestedDeadline < currentDate)) {
-				document.getElementById("txtDayOfRequestedDeadline").innerHTML = "(of Today)";
 			} else {
-				document.getElementById("txtDayOfRequestedDeadline").innerHTML = "(of Tomorrow)";		
 				dateOfRequestedDeadline.setDate(dateOfRequestedDeadline.getDate() + 1);
 			}
+
+				document.getElementById("txtDayOfRequestedDeadline").innerHTML = " of (" + dateOfRequestedDeadline.getMonthTwoDigits() + "/" + dateOfRequestedDeadline.getDateTwoDigits() +  "/" + dateOfRequestedDeadline.getFullYear() + ")";		
+
 			return dateOfRequestedDeadline;
 		}
 		function loadTimezone(lst) {
@@ -122,7 +148,7 @@
 
 		function loadCurrentTime() {
 			currentTimeInCurrentLocation = new Date().getTime();
-  			document.getElementById("txtCurrentTimeInCurrentLocation").innerHTML =  new Date(currentTimeInCurrentLocation);
+  			document.getElementById("txtCurrentTimeInCurrentLocation").innerHTML =  formatDateMMDDYYHHMM(new Date(currentTimeInCurrentLocation));
 		}
 
 		function initializeTextBoxes() {
@@ -258,6 +284,10 @@
 
   		}
 
+  		function formatDateMMDDYYHHMM(date) {
+  			return date.getMonthTwoDigits() + "/" + date.getDateTwoDigits() + "/"+ date.getFullYear() +" "+ date.getHoursTwoDigitsAMPM() +":"+ date.getMinutesTwoDigits() +" " + date.getAMPM();
+  		}
+
 
   		function formatDate(date) {
   			var dayOfTheWeek = date.getDay();
@@ -265,7 +295,7 @@
   			var minutes = date.getMinutesTwoDigits();
   			
 
-  			return ("<b>"+ hours +":"+ minutes +" "+ date.getAMPM() + "</b> (of "+ days[dayOfTheWeek] +")");
+  			return ("<b>"+ hours +":"+ minutes +" "+ date.getAMPM() + "</b> (of "+ date.getMonthTwoDigits() + "/" + date.getDateTwoDigits() +  "/" + date.getFullYear() +")");
 
   		}
 
@@ -273,13 +303,18 @@
 
   	</script>
   	<style>
-  		body, table tr td{
-  			font-family: helvetica, verdana;
-  			font-size: 12px;
+  		body, input[type="text"], select, table tr td{
+  			font-family: Arial, Calibri, Trebuchet MS, Verdana, Helvetica;
+  			font-size: 14px;
   		}
   		input[type="text"] {
   			width: 60px;
   		}
+
+  		tr.bankerData > td {
+  			padding-bottom: 30px;
+  		}
+
   	</style>
 
   </head>
@@ -287,9 +322,11 @@
   	<table width="100%"><tr><td align="right"><div id="txtCurrentTimeInCurrentLocation" > </div></td></tr></table>
   	
   	<table>
-  		<tr>
+  		<tr class="bankerData">
   			<td><label for="txtDestinationTimezone">Timezone of the requester</label></td>
   			<td><select id="lstTimezones" onchange="loadTimezone(this);"></select><input type="text" id="txtDestinationTimezone"/></td>
+  			<td><label for="txtRequestedDeadLineInCurrentLocation">Requested Deadline in local time</label></td>
+  			<td><input type="text" id="txtRequestedDeadLineInCurrentLocation" size="50" onchange="autoFormatTime(this); calculateRequestedDeadlineDay(this);"  value="0:00"/><span id="txtDayOfRequestedDeadline"></span></td>
   		</tr>
   		<tr>
   			<td><label for="txtEstimatedEffort">Estimated Effort</label></td>
@@ -298,10 +335,6 @@
   		<tr>
   			<td><label for="txtLeadTime">LeadTime</label></td>
   			<td><input type="text" id="txtLeadTime" size="50" onchange="autoFormatTime(this);" value="0:00"/></td>
-  		</tr>
-  		<tr>
-  			<td><label for="txtRequestedDeadLineInCurrentLocation">Requested Deadline in current location</label></td>
-  			<td><input type="text" id="txtRequestedDeadLineInCurrentLocation" size="50" onchange="autoFormatTime(this); calculateRequestedDeadlineDay(this);"  value="0:00"/><span id="txtDayOfRequestedDeadline"></span></td>
   		</tr>
   		<tr>
   			<td colspan="2">
@@ -313,11 +346,25 @@
   	
 <hr />
 
+
+	<table>
+		<tr>
+			<td><label for="txtDeadLineInCurrentLocation">NEW Deadline in local time:&nbsp;&nbsp;</label></td>
+			<td><span id="txtDeadLineInCurrentLocation"></span></td>
+		</tr>
+		<tr>
+			<td><label for="txtDeadLineInRequesterLocation">NEW Deadline in requester time:&nbsp;</label></td>
+			<td><span id="txtDeadLineInRequesterLocation" /></span></td>
+		</tr>
+		<tr>
+			<td><label for="txtAoD">Advice of Delay:&nbsp;&nbsp;</label></td>
+			<td><span id="txtAoD" /></span></td>
+		</tr>
+	</table>
   	
-  	<label for="txtDeadLineInCurrentLocation">Deadline in current location</label><div id="txtDeadLineInCurrentLocation"></div><br />
-  	<label for="txtDeadLineInRequesterLocation">Deadline in requester location</label><div id="txtDeadLineInRequesterLocation" /></div><br />
   	
-  	<label for="txtAoD">Advice of Delay</label><div id="txtAoD" /></div><br />
+  	
+  	
   	
 
   	
