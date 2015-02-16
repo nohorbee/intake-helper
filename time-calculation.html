@@ -323,10 +323,10 @@
   	
   	<table>
   		<tr class="bankerData">
-  			<td><label for="txtDestinationTimezone">Timezone of the requester</label></td>
-  			<td><select id="lstTimezones" onchange="loadTimezone(this);"></select><input type="text" id="txtDestinationTimezone"/></td>
   			<td><label for="txtRequestedDeadLineInCurrentLocation">Requested Deadline in local time</label></td>
   			<td><input type="text" id="txtRequestedDeadLineInCurrentLocation" size="50" onchange="autoFormatTime(this); calculateRequestedDeadlineDay(this);"  value="0:00"/><span id="txtDayOfRequestedDeadline"></span></td>
+  			<td><label for="txtDestinationTimezone">Timezone of the requester</label></td>
+  			<td><select id="lstTimezones" onchange="loadTimezone(this);"></select><input type="text" id="txtDestinationTimezone"/></td>
   		</tr>
   		<tr>
   			<td><label for="txtEstimatedEffort">Estimated Effort</label></td>
