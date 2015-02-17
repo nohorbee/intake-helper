@@ -78,9 +78,15 @@
 		};
 
 		function autoFormatTime(control) {
-			var value = control.value;
+			var value = control.value.trim();
 			var newValue = "";
-			if (validateTimeFormat(value) || isNaN(value)) return false;
+			if (validateTimeFormat(value)) {
+				return true;
+			} 
+			if (isNaN(value) || !value.length) {
+				control.value = "0:00";
+				return false;
+			};
 			if (value.length==1) {
 				 newValue = "0:0" + value;
 			}
@@ -93,7 +99,67 @@
 				newValue = ""+ hours + ":" + minutes;
 			}
 			control.value = newValue;
+			return true;
 		} 
+
+		function autoFormatTimeAMPM(control) {
+			var value = control.value.toUpperCase();
+			var amPos = value.indexOf("AM");
+			var pmPos = value.indexOf("PM");
+
+			var ampm = "";
+
+			if (amPos==-1 && pmPos==-1) {
+				autoFormatTime(control);
+				ampm = deduceAMPM(control.value);
+				control.value = control.value + " " + ampm;
+			} else {
+				var pos = Number.max(amPos, pmPos);
+				ampm = value.substring(pos, pos+2);
+				control.value = control.value.substring(0, pos);
+				if (autoFormatTime(control)) {
+					control.value = control.value + " " + ampm;	
+				} else {
+					control.value = control.value + " " + deduceAMPM(control.value);
+				}
+			}
+
+			sanityTimeField(control);
+
+
+		} 
+
+		function sanityTimeField(control) {
+			var value = control.value;
+			var aFormatedTime = value.split(" ");
+			var aTime = aFormatedTime[0].split(":");
+			var ampm = aFormatedTime[1];
+			var hours = aTime[0];
+			var minutes = aTime[1];
+
+			if (parseInt(hours) > 12) {
+				hours = parseInt(hours) - 12;
+			}
+
+			if (parseInt(hours) == 0) {
+				ampm = "AM";
+			}
+
+			control.value = hours + ":" + minutes + " " + ampm;
+
+		}
+
+		function deduceAMPM(value) {
+			return (parseInt(value) < 12 ? "AM" : "PM");
+		}
+
+		Number.max = function(n1, n2) {
+			return (n1>n2 ? n1 : n2);
+		}
+
+		Number.min = function (n1,n2) {
+			return (n1<n2 ? n1 : n2);	
+		}
 
   		var currentTimeInCurrentLocation, deadlineInCurrentLocation, estimatedEffort, leadTime, deadLineInRequesterLocation;
   		var signOfTimezoneInCurrentLocation = "-";
@@ -129,9 +195,21 @@
 		TZ["Tokio"] = "+09:00"
 		
 		function calculateRequestedDeadlineDay(cmp) {
-			var aRequestedDeadline = cmp.value.split(":");
+			var aRequestedDeadlineFormat = cmp.value.split(" ");
+			var aRequestedDeadLineTime = aRequestedDeadlineFormat[0].split(":");
+			var ampm = aRequestedDeadlineFormat[1];
+			var requestedDeadlineHours = aRequestedDeadLineTime[0];
+			var requestedDeadlineMinutes = aRequestedDeadLineTime[1];
+
+			if (ampm == "PM") {
+				requestedDeadlineHours = parseInt(requestedDeadlineHours) + 12;
+				
+				if (requestedDeadlineHours==24) requestedDeadlineHours = 12;
+			}
+
 			var currentDate = new Date(currentTimeInCurrentLocation);
-			var dateOfRequestedDeadline = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), aRequestedDeadline[0], aRequestedDeadline[1], currentDate.getSeconds(), currentDate.getMilliseconds());
+			var dateOfRequestedDeadline = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), requestedDeadlineHours, requestedDeadlineMinutes, currentDate.getSeconds(), currentDate.getMilliseconds());
+			
 			if (dayOfRequestedDeadlineIsToday = !(dateOfRequestedDeadline < currentDate)) {
 			} else {
 				dateOfRequestedDeadline.setDate(dateOfRequestedDeadline.getDate() + 1);
@@ -156,6 +234,7 @@
 			for(var i in inp){
 			    if(inp[i].type == "text"){
 			        inp[i].onfocus = inp[i].select;
+			        inp[i].onclick = inp[i].select;
 			        inp[i].onkeyup = function(event){
 						event = event || window.event
 					    if(event.keyCode == 13){
@@ -182,7 +261,15 @@
   		}
 
   		function validateTimeFormat(value) {
-  			timeRe = /^\d{1,2}:\d{2}?$/;  // validates regex for xx:xx
+  			var timeRe = /^\d{1,2}:\d{2}?$/;  // validates regex for xx:xx
+  			return value.match(timeRe);
+  		}
+
+  		function validateTimeFormatAMPM(value) {
+  			var timeRe = /^\d{1,2}:\d{2}?$/;  // validates regex for xx:xx AM/PM
+  			//TODO: fix regex to take ampm
+  			return true;
+
   			return value.match(timeRe);
   		}
 
@@ -216,17 +303,12 @@
 		    var effortTotalMins = 1*effortHMArray[0] * 60 + 1*effortHMArray[1];
 		    var effortInTimeStamp = effortTotalMins * 60 * 1000;
 
-		    if(!validateTimeFormat(document.getElementById("txtRequestedDeadLineInCurrentLocation").value)) {
+		    if(!validateTimeFormatAMPM(document.getElementById("txtRequestedDeadLineInCurrentLocation").value)) {
 		      alert("Invalid time format: ");
 		      return false;
 		    }
 
-		    var requestedDeadlineHMArray = document.getElementById("txtRequestedDeadLineInCurrentLocation").value.split(":");
-		    var requestedDeadlineTotalMins = 1*requestedDeadlineHMArray[0] * 60 + 1*effortHMArray[1];
-		    var requestedDeadlineInTimeStamp = requestedDeadlineTotalMins * 60 * 1000;
-
-
-			if(!document.getElementById("txtDestinationTimezone").value.match(timeZoneRe)) {
+		    if(!document.getElementById("txtDestinationTimezone").value.match(timeZoneRe)) {
 		      alert("Invalid timezone format: ");
 		      return false;
 		    }
@@ -324,7 +406,7 @@
   	<table>
   		<tr class="bankerData">
   			<td><label for="txtRequestedDeadLineInCurrentLocation">Requested Deadline in local time</label></td>
-  			<td><input type="text" id="txtRequestedDeadLineInCurrentLocation" size="50" onchange="autoFormatTime(this); calculateRequestedDeadlineDay(this);"  value="0:00"/><span id="txtDayOfRequestedDeadline"></span></td>
+  			<td><input type="text" id="txtRequestedDeadLineInCurrentLocation" size="50" onchange="autoFormatTimeAMPM(this); calculateRequestedDeadlineDay(this);"  value="0:00 AM"/><span id="txtDayOfRequestedDeadline"></span></td>
   			<td><label for="txtDestinationTimezone">Timezone of the requester</label></td>
   			<td><select id="lstTimezones" onchange="loadTimezone(this);"></select><input type="text" id="txtDestinationTimezone"/></td>
   		</tr>
