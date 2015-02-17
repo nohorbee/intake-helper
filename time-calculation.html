@@ -29,7 +29,7 @@
   		Date.prototype.getHoursTwoDigitsAMPM = function()
 		{
 		    var retval = this.getHours();
-		    retval = (retval < 12 ? retval : retval - 12);
+		    retval = (retval <= 12 ? retval : retval - 12);
 		    if (retval < 10)
 		    {
 		        return ("0" + retval.toString());
