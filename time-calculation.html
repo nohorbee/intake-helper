@@ -1,0 +1,455 @@
+<html>
+  <head>
+
+  	<script>
+
+	  	if(typeof String.prototype.trim !== 'function') {
+			String.prototype.trim = function() {
+				return this.replace(/^\s+|\s+$/g, ''); 
+			}
+		}
+  		
+  		Date.prototype.getAMPM = function() {
+  			return (this.getHours() < 12 ? "AM" : "PM");
+  		}
+
+  		function getTwoDigits(number) {
+  			var retval = 1*number;
+  			if (retval < 10)
+		    {
+		        return ("0" + retval.toString());
+		    }
+		    else
+		    {
+		        return retval.toString();
+		    }
+
+  		}
+
+  		Date.prototype.getHoursTwoDigitsAMPM = function()
+		{
+		    var retval = this.getHours();
+		    retval = (retval <= 12 ? retval : retval - 12);
+		    if (retval < 10)
+		    {
+		        return ("0" + retval.toString());
+		    }
+		    else
+		    {
+		        return retval.toString();
+		    }
+		}
+
+		Date.prototype.getMinutesTwoDigits = function()
+		{
+		    var retval =  this.getMinutes().toString();
+		    if (retval < 10)
+		    {
+		        return ("0" + retval.toString());
+		    }
+		    else
+		    {
+		        return retval.toString();
+		    }
+		}
+
+		Date.prototype.getDateTwoDigits = function() {
+			var retval =  this.getDate().toString();
+		    if (retval < 10)
+		    {
+		        return ("0" + retval.toString());
+		    }
+		    else
+		    {
+		        return retval.toString();
+		    }
+		};
+
+		Date.prototype.getMonthTwoDigits = function() {
+			var retval =  (this.getMonth() +1 ).toString();
+		    if (retval < 10)
+		    {
+		        return ("0" + retval.toString());
+		    }
+		    else
+		    {
+		        return retval.toString();
+		    }
+		};
+
+		function autoFormatTime(control) {
+			var value = control.value.trim();
+			var newValue = "";
+			if (validateTimeFormat(value)) {
+				return true;
+			} 
+			if (isNaN(value) || !value.length) {
+				control.value = "0:00";
+				return false;
+			};
+			if (value.length==1) {
+				 newValue = "0:0" + value;
+			}
+			if (value.length==2) {
+				newValue = "0:" + value;
+			}
+			if (value.length>2) {
+				var hours = value.substring(value.length-4,value.length-2);
+				var minutes = value.substring(value.length-2);
+				newValue = ""+ hours + ":" + minutes;
+			}
+			control.value = newValue;
+			return true;
+		} 
+
+		function autoFormatTimeAMPM(control) {
+			var value = control.value.toUpperCase();
+			var amPos = value.indexOf("AM");
+			var pmPos = value.indexOf("PM");
+
+			var ampm = "";
+
+			if (amPos==-1 && pmPos==-1) {
+				autoFormatTime(control);
+				ampm = deduceAMPM(control.value);
+				control.value = control.value + " " + ampm;
+			} else {
+				var pos = Number.max(amPos, pmPos);
+				ampm = value.substring(pos, pos+2);
+				control.value = control.value.substring(0, pos);
+				if (autoFormatTime(control)) {
+					control.value = control.value + " " + ampm;	
+				} else {
+					control.value = control.value + " " + deduceAMPM(control.value);
+				}
+			}
+
+			sanityTimeField(control);
+
+
+		} 
+
+		function sanityTimeField(control) {
+			var value = control.value;
+			var aFormatedTime = value.split(" ");
+			var aTime = aFormatedTime[0].split(":");
+			var ampm = aFormatedTime[1];
+			var hours = aTime[0];
+			var minutes = aTime[1];
+
+			if (parseInt(hours) > 12) {
+				hours = parseInt(hours) - 12;
+			}
+
+			if (parseInt(hours) == 0) {
+				ampm = "AM";
+			}
+
+			control.value = hours + ":" + minutes + " " + ampm;
+
+		}
+
+		function deduceAMPM(value) {
+			return (parseInt(value) < 12 ? "AM" : "PM");
+		}
+
+		Number.max = function(n1, n2) {
+			return (n1>n2 ? n1 : n2);
+		}
+
+		Number.min = function (n1,n2) {
+			return (n1<n2 ? n1 : n2);	
+		}
+
+  		var currentTimeInCurrentLocation, deadlineInCurrentLocation, estimatedEffort, leadTime, deadLineInRequesterLocation;
+  		var signOfTimezoneInCurrentLocation = "-";
+  		var currentCity = "Buenos Aires";
+  		var timezoneInCurrentLocation = "03:00";
+  		var dayOfRequestedDeadlineIsToday = true;
+
+  		var days = {};
+  		days[0] = "Sunday";
+  		days[1] = "Monday";
+  		days[2] = "Tuesday";
+  		days[3] = "Wednesday";
+  		days[4] = "Thursday";
+  		days[5] = "Friday";
+  		days[6] = "Saturday";
+
+  		var TZ = {};
+
+  		TZ["New York"] = "-04:00"
+  		TZ["London"] = "+00:00"
+  		TZ[currentCity] = signOfTimezoneInCurrentLocation + timezoneInCurrentLocation;
+  		TZ["Bangalore"] = "+05:30"
+  		TZ["Beijing"] = "+08:00"
+  		TZ["Berlin"] = "+01:00"
+  		TZ["Chicago"] = "-05:00"
+  		TZ["Los Angeles"] = "-07:00"
+		TZ["Madrid"] = "+01:00"
+		TZ["Moscu"] = "+03:00"
+		TZ["Mumbai"] = "+05:30"		
+		TZ["San Francisco"] = "-07:00"
+		TZ["Singapur"] = "+08:00"
+		TZ["Sydney"]  = "+10:00"
+		TZ["Tokio"] = "+09:00"
+		
+		function calculateRequestedDeadlineDay(cmp) {
+			var aRequestedDeadlineFormat = cmp.value.split(" ");
+			var aRequestedDeadLineTime = aRequestedDeadlineFormat[0].split(":");
+			var ampm = aRequestedDeadlineFormat[1];
+			var requestedDeadlineHours = aRequestedDeadLineTime[0];
+			var requestedDeadlineMinutes = aRequestedDeadLineTime[1];
+
+			if (ampm == "PM") {
+				requestedDeadlineHours = parseInt(requestedDeadlineHours) + 12;
+				
+				if (requestedDeadlineHours==24) requestedDeadlineHours = 12;
+			}
+
+			var currentDate = new Date(currentTimeInCurrentLocation);
+			var dateOfRequestedDeadline = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), requestedDeadlineHours, requestedDeadlineMinutes, currentDate.getSeconds(), currentDate.getMilliseconds());
+			
+			if (dayOfRequestedDeadlineIsToday = !(dateOfRequestedDeadline < currentDate)) {
+			} else {
+				dateOfRequestedDeadline.setDate(dateOfRequestedDeadline.getDate() + 1);
+			}
+
+				document.getElementById("txtDayOfRequestedDeadline").innerHTML = " of (" + dateOfRequestedDeadline.getMonthTwoDigits() + "/" + dateOfRequestedDeadline.getDateTwoDigits() +  "/" + dateOfRequestedDeadline.getFullYear() + ")";		
+
+			return dateOfRequestedDeadline;
+		}
+		function loadTimezone(lst) {
+			document.getElementById("txtDestinationTimezone").value = lst.value;
+		}
+
+
+		function loadCurrentTime() {
+			currentTimeInCurrentLocation = new Date().getTime();
+  			document.getElementById("txtCurrentTimeInCurrentLocation").innerHTML =  formatDateMMDDYYHHMM(new Date(currentTimeInCurrentLocation));
+		}
+
+		function initializeTextBoxes() {
+			var inp = document.getElementsByTagName('input');
+			for(var i in inp){
+			    if(inp[i].type == "text"){
+			        inp[i].onfocus = function() { this.select() };
+			        inp[i].onkeyup = function(event){
+						event = event || window.event
+					    if(event.keyCode == 13){
+					        calculate();
+					    }
+					}
+			    }
+			}
+		}
+
+  		function initialize() {
+  			initializeTextBoxes();
+  			loadCurrentTime()
+  			for (var i in TZ) {
+  				var option = document.createElement("option");
+  				option.value = TZ[i];
+  				option.text = i + " " + TZ[i];
+  				document.getElementById("lstTimezones").add(option);
+  			}
+  			loadTimezone(document.getElementById("lstTimezones"));
+
+
+
+  		}
+
+  		function validateTimeFormat(value) {
+  			var timeRe = /^\d{1,2}:\d{2}?$/;  // validates regex for xx:xx
+  			return value.match(timeRe);
+  		}
+
+  		function validateTimeFormatAMPM(value) {
+  			var timeRe = /^\d{1,2}:\d{2}?$/;  // validates regex for xx:xx AM/PM
+  			//TODO: fix regex to take ampm
+  			return true;
+
+  			return value.match(timeRe);
+  		}
+
+  		function calculate () {
+
+  			loadCurrentTime();
+
+  			timeZoneRe = /^[+-]\d{1,2}:\d{2}?$/;
+  			
+			if (document.getElementById("txtLeadTime").value.trim().length == 0) {
+				leadTime = "0:00";
+			} else {
+				if(!validateTimeFormat(document.getElementById("txtLeadTime").value)) {
+			      alert("Invalid time format: ");
+			      return false;
+			    }
+			    leadTime = document.getElementById("txtLeadTime").value;
+			}
+
+			var leadTimeHMArray = leadTime.split(":");
+		    var leadTimeTotalMins = 1*leadTimeHMArray[0] * 60 + 1*leadTimeHMArray[1];
+		    var leadTimeInTimeStamp = leadTimeTotalMins * 60 * 1000;
+					    
+
+		    if(!validateTimeFormat(document.getElementById("txtEstimatedEffort").value)) {
+		      alert("Invalid time format: ");
+		      return false;
+		    }
+
+		    var effortHMArray = document.getElementById("txtEstimatedEffort").value.split(":");
+		    var effortTotalMins = 1*effortHMArray[0] * 60 + 1*effortHMArray[1];
+		    var effortInTimeStamp = effortTotalMins * 60 * 1000;
+
+		    if(!validateTimeFormatAMPM(document.getElementById("txtRequestedDeadLineInCurrentLocation").value)) {
+		      alert("Invalid time format: ");
+		      return false;
+		    }
+
+		    if(!document.getElementById("txtDestinationTimezone").value.match(timeZoneRe)) {
+		      alert("Invalid timezone format: ");
+		      return false;
+		    }
+
+		    var destinationTimezone = document.getElementById("txtDestinationTimezone").value;
+
+		    var signOfDestinationTimezone = destinationTimezone.substring(0,1);
+		    destinationTimezone = destinationTimezone.substring(1);
+
+		    var destinationTimezoneHMArray = destinationTimezone.split(":");
+		    var destinationTimezoneTotalMins = 1*destinationTimezoneHMArray[0] * 60 + 1*destinationTimezoneHMArray[1];
+		    var destinationTimezonetInTimeStamp = destinationTimezoneTotalMins * 60 * 1000;
+		    if (signOfDestinationTimezone == "-") {
+		    	destinationTimezonetInTimeStamp = -1*destinationTimezonetInTimeStamp 
+		    }
+
+
+// el current location esta hardcodeado al principio
+
+		    var timezoneInCurrentLocationHMArray = timezoneInCurrentLocation.split(":");
+		    var timezoneInCurrentLocationTotalMins = 1*timezoneInCurrentLocationHMArray[0] * 60 + 1*timezoneInCurrentLocationHMArray[1];
+		    var timezonetInCurrentLicationInTimeStamp = timezoneInCurrentLocationTotalMins * 60 * 1000;
+
+		    
+		    if (signOfTimezoneInCurrentLocation == "-") {
+		    	timezonetInCurrentLicationInTimeStamp = -1*timezonetInCurrentLicationInTimeStamp
+		    }
+
+
+		    var timeZoneDifference = destinationTimezonetInTimeStamp - timezonetInCurrentLicationInTimeStamp;
+
+		    deadlineInCurrentLocation =  currentTimeInCurrentLocation + effortInTimeStamp + leadTimeInTimeStamp;
+		    deadLineInRequesterLocation = deadlineInCurrentLocation + timeZoneDifference;
+		    document.getElementById("txtDeadLineInCurrentLocation").innerHTML = formatDate(new Date(deadlineInCurrentLocation));
+		    document.getElementById("txtDeadLineInRequesterLocation").innerHTML = formatDate(new Date(deadLineInRequesterLocation));
+
+		    var dateToCompare = calculateRequestedDeadlineDay(document.getElementById("txtRequestedDeadLineInCurrentLocation")).getTime();
+		    var AoDMilliseconds =  deadlineInCurrentLocation - dateToCompare;
+		    var AoD = AoDMilliseconds / 1000 / 60 / 60;
+		    
+		    var AoDHours = Math.floor(AoD);
+		    if (AoDHours<0) {
+				document.getElementById("txtAoD").innerHTML = "<b>There is no delay!</b>";		    	
+		    } else {
+			    var AoDdec = AoD - AoDHours;
+			    var AoDMinutes = Math.round(AoDdec * 60);
+			    if (AoDMinutes<=0 && AoDHours<=0) {
+			    	document.getElementById("txtAoD").innerHTML = "<b>There is no delay!</b>";		    	
+			    } else {
+			    	document.getElementById("txtAoD").innerHTML = getTwoDigits(AoDHours) + ":" + getTwoDigits(AoDMinutes);	
+			    }
+			    
+			}
+
+
+  		}
+
+  		function formatDateMMDDYYHHMM(date) {
+  			return date.getMonthTwoDigits() + "/" + date.getDateTwoDigits() + "/"+ date.getFullYear() +" "+ date.getHoursTwoDigitsAMPM() +":"+ date.getMinutesTwoDigits() +" " + date.getAMPM();
+  		}
+
+
+  		function formatDate(date) {
+  			var dayOfTheWeek = date.getDay();
+  			var hours = date.getHoursTwoDigitsAMPM();
+  			var minutes = date.getMinutesTwoDigits();
+  			
+
+  			return ("<b>"+ hours +":"+ minutes +" "+ date.getAMPM() + "</b> (of "+ date.getMonthTwoDigits() + "/" + date.getDateTwoDigits() +  "/" + date.getFullYear() +")");
+
+  		}
+
+
+
+  	</script>
+  	<style>
+  		body, input[type="text"], select, table tr td{
+  			font-family: Arial, Calibri, Trebuchet MS, Verdana, Helvetica;
+  			font-size: 14px;
+  		}
+  		input[type="text"] {
+  			width: 60px;
+  		}
+
+  		tr.bankerData > td {
+  			padding-bottom: 30px;
+  		}
+
+  	</style>
+
+  </head>
+  <body onload="initialize();">
+  	<table width="100%"><tr><td align="right"><div id="txtCurrentTimeInCurrentLocation" > </div></td></tr></table>
+  	
+  	<table>
+  		<tr class="bankerData">
+  			<td><label for="txtRequestedDeadLineInCurrentLocation">Requested Deadline in local time</label></td>
+  			<td><input type="text" id="txtRequestedDeadLineInCurrentLocation" size="50" onchange="autoFormatTimeAMPM(this); calculateRequestedDeadlineDay(this);"  value="0:00 AM"/><span id="txtDayOfRequestedDeadline"></span></td>
+  			<td><label for="txtDestinationTimezone">Timezone of the requester</label></td>
+  			<td><select id="lstTimezones" onchange="loadTimezone(this);"></select><input type="text" id="txtDestinationTimezone"/></td>
+  		</tr>
+  		<tr>
+  			<td><label for="txtEstimatedEffort">Estimated Effort</label></td>
+  			<td><input type="text" id="txtEstimatedEffort" size="50" onchange="autoFormatTime(this);" value="0:00"/></td>
+  		</tr>
+  		<tr>
+  			<td><label for="txtLeadTime">LeadTime</label></td>
+  			<td><input type="text" id="txtLeadTime" size="50" onchange="autoFormatTime(this);" value="0:00"/></td>
+  		</tr>
+  		<tr>
+  			<td colspan="2">
+  				<input type="button" id="btnCalculate" value="Calculate" onclick="calculate();"/><br />
+  			</td>
+  		</tr>
+  	</table>
+
+  	
+<hr />
+
+
+	<table>
+		<tr>
+			<td><label for="txtDeadLineInCurrentLocation">NEW Deadline in local time:&nbsp;&nbsp;</label></td>
+			<td><span id="txtDeadLineInCurrentLocation"></span></td>
+		</tr>
+		<tr>
+			<td><label for="txtDeadLineInRequesterLocation">NEW Deadline in requester time:&nbsp;</label></td>
+			<td><span id="txtDeadLineInRequesterLocation" /></span></td>
+		</tr>
+		<tr>
+			<td><label for="txtAoD">Advice of Delay:&nbsp;&nbsp;</label></td>
+			<td><span id="txtAoD" /></span></td>
+		</tr>
+	</table>
+  	
+  	
+  	
+  	
+  	
+
+  	
+
+
+  </body>
+</html>
