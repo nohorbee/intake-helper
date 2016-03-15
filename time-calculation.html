@@ -5,10 +5,10 @@
 
 	  	if(typeof String.prototype.trim !== 'function') {
 			String.prototype.trim = function() {
-				return this.replace(/^\s+|\s+$/g, ''); 
+				return this.replace(/^\s+|\s+$/g, '');
 			}
 		}
-  		
+
   		Date.prototype.getAMPM = function() {
   			return (this.getHours() < 12 ? "AM" : "PM");
   		}
@@ -82,7 +82,7 @@
 			var newValue = "";
 			if (validateTimeFormat(value)) {
 				return true;
-			} 
+			}
 			if (isNaN(value) || !value.length) {
 				control.value = "0:00";
 				return false;
@@ -100,7 +100,7 @@
 			}
 			control.value = newValue;
 			return true;
-		} 
+		}
 
 		function autoFormatTimeAMPM(control) {
 			var value = control.value.toUpperCase();
@@ -118,7 +118,7 @@
 				ampm = value.substring(pos, pos+2);
 				control.value = control.value.substring(0, pos);
 				if (autoFormatTime(control)) {
-					control.value = control.value + " " + ampm;	
+					control.value = control.value + " " + ampm;
 				} else {
 					control.value = control.value + " " + deduceAMPM(control.value);
 				}
@@ -127,7 +127,7 @@
 			sanityTimeField(control);
 
 
-		} 
+		}
 
 		function sanityTimeField(control) {
 			var value = control.value;
@@ -158,7 +158,7 @@
 		}
 
 		Number.min = function (n1,n2) {
-			return (n1<n2 ? n1 : n2);	
+			return (n1<n2 ? n1 : n2);
 		}
 
   		var currentTimeInCurrentLocation, deadlineInCurrentLocation, estimatedEffort, leadTime, deadLineInRequesterLocation;
@@ -178,22 +178,22 @@
 
   		var TZ = {};
 
-		TZ["New York"] = "-05:00"
+		TZ["New York"] = "-04:00"
 		TZ["London"] = "+00:00"
 		TZ[currentCity] = signOfTimezoneInCurrentLocation + timezoneInCurrentLocation;
 		TZ["Bangalore"] = "+05:30"
 		TZ["Beijing"] = "+08:00"
 		TZ["Berlin"] = "+01:00"
-		TZ["Chicago"] = "-06:00"
-		TZ["Los Angeles"] = "-08:00"
+		TZ["Chicago"] = "-05:00"
+		TZ["Los Angeles"] = "-07:00"
 		TZ["Madrid"] = "+01:00"
 		TZ["Moscu"] = "+03:00"
-		TZ["Mumbai"] = "+05:30"		
-		TZ["San Francisco"] = "-08:00"
+		TZ["Mumbai"] = "+05:30"
+		TZ["San Francisco"] = "-07:00"
 		TZ["Singapur"] = "+08:00"
 		TZ["Sydney"]  = "+10:00"
 		TZ["Tokio"] = "+09:00"
-		
+
 		function calculateRequestedDeadlineDay(cmp) {
 			var aRequestedDeadlineFormat = cmp.value.split(" ");
 			var aRequestedDeadLineTime = aRequestedDeadlineFormat[0].split(":");
@@ -203,19 +203,19 @@
 
 			if (ampm == "PM") {
 				requestedDeadlineHours = parseInt(requestedDeadlineHours) + 12;
-				
+
 				if (requestedDeadlineHours==24) requestedDeadlineHours = 12;
 			}
 
 			var currentDate = new Date(currentTimeInCurrentLocation);
 			var dateOfRequestedDeadline = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), requestedDeadlineHours, requestedDeadlineMinutes, currentDate.getSeconds(), currentDate.getMilliseconds());
-			
+
 			if (dayOfRequestedDeadlineIsToday = !(dateOfRequestedDeadline < currentDate)) {
 			} else {
 				dateOfRequestedDeadline.setDate(dateOfRequestedDeadline.getDate() + 1);
 			}
 
-				document.getElementById("txtDayOfRequestedDeadline").innerHTML = " of (" + dateOfRequestedDeadline.getMonthTwoDigits() + "/" + dateOfRequestedDeadline.getDateTwoDigits() +  "/" + dateOfRequestedDeadline.getFullYear() + ")";		
+				document.getElementById("txtDayOfRequestedDeadline").innerHTML = " of (" + dateOfRequestedDeadline.getMonthTwoDigits() + "/" + dateOfRequestedDeadline.getDateTwoDigits() +  "/" + dateOfRequestedDeadline.getFullYear() + ")";
 
 			return dateOfRequestedDeadline;
 		}
@@ -277,7 +277,7 @@
   			loadCurrentTime();
 
   			timeZoneRe = /^[+-]\d{1,2}:\d{2}?$/;
-  			
+
 			if (document.getElementById("txtLeadTime").value.trim().length == 0) {
 				leadTime = "0:00";
 			} else {
@@ -291,7 +291,7 @@
 			var leadTimeHMArray = leadTime.split(":");
 		    var leadTimeTotalMins = 1*leadTimeHMArray[0] * 60 + 1*leadTimeHMArray[1];
 		    var leadTimeInTimeStamp = leadTimeTotalMins * 60 * 1000;
-					    
+
 
 		    if(!validateTimeFormat(document.getElementById("txtEstimatedEffort").value)) {
 		      alert("Invalid time format: ");
@@ -321,7 +321,7 @@
 		    var destinationTimezoneTotalMins = 1*destinationTimezoneHMArray[0] * 60 + 1*destinationTimezoneHMArray[1];
 		    var destinationTimezonetInTimeStamp = destinationTimezoneTotalMins * 60 * 1000;
 		    if (signOfDestinationTimezone == "-") {
-		    	destinationTimezonetInTimeStamp = -1*destinationTimezonetInTimeStamp 
+		    	destinationTimezonetInTimeStamp = -1*destinationTimezonetInTimeStamp
 		    }
 
 
@@ -331,7 +331,7 @@
 		    var timezoneInCurrentLocationTotalMins = 1*timezoneInCurrentLocationHMArray[0] * 60 + 1*timezoneInCurrentLocationHMArray[1];
 		    var timezonetInCurrentLicationInTimeStamp = timezoneInCurrentLocationTotalMins * 60 * 1000;
 
-		    
+
 		    if (signOfTimezoneInCurrentLocation == "-") {
 		    	timezonetInCurrentLicationInTimeStamp = -1*timezonetInCurrentLicationInTimeStamp
 		    }
@@ -347,19 +347,19 @@
 		    var dateToCompare = calculateRequestedDeadlineDay(document.getElementById("txtRequestedDeadLineInCurrentLocation")).getTime();
 		    var AoDMilliseconds =  deadlineInCurrentLocation - dateToCompare;
 		    var AoD = AoDMilliseconds / 1000 / 60 / 60;
-		    
+
 		    var AoDHours = Math.floor(AoD);
 		    if (AoDHours<0) {
-				document.getElementById("txtAoD").innerHTML = "<b>There is no delay!</b>";		    	
+				document.getElementById("txtAoD").innerHTML = "<b>There is no delay!</b>";
 		    } else {
 			    var AoDdec = AoD - AoDHours;
 			    var AoDMinutes = Math.round(AoDdec * 60);
 			    if (AoDMinutes<=0 && AoDHours<=0) {
-			    	document.getElementById("txtAoD").innerHTML = "<b>There is no delay!</b>";		    	
+			    	document.getElementById("txtAoD").innerHTML = "<b>There is no delay!</b>";
 			    } else {
-			    	document.getElementById("txtAoD").innerHTML = getTwoDigits(AoDHours) + ":" + getTwoDigits(AoDMinutes);	
+			    	document.getElementById("txtAoD").innerHTML = getTwoDigits(AoDHours) + ":" + getTwoDigits(AoDMinutes);
 			    }
-			    
+
 			}
 
 
@@ -374,7 +374,7 @@
   			var dayOfTheWeek = date.getDay();
   			var hours = date.getHoursTwoDigitsAMPM();
   			var minutes = date.getMinutesTwoDigits();
-  			
+
 
   			return ("<b>"+ hours +":"+ minutes +" "+ date.getAMPM() + "</b> (of "+ date.getMonthTwoDigits() + "/" + date.getDateTwoDigits() +  "/" + date.getFullYear() +")");
 
@@ -401,7 +401,7 @@
   </head>
   <body onload="initialize();">
   	<table width="100%"><tr><td align="right"><div id="txtCurrentTimeInCurrentLocation" > </div></td></tr></table>
-  	
+
   	<table>
   		<tr class="bankerData">
   			<td><label for="txtRequestedDeadLineInCurrentLocation">Requested Deadline in local time</label></td>
@@ -424,7 +424,7 @@
   		</tr>
   	</table>
 
-  	
+
 <hr />
 
 
@@ -442,13 +442,13 @@
 			<td><span id="txtAoD" /></span></td>
 		</tr>
 	</table>
-  	
-  	
-  	
-  	
-  	
 
-  	
+
+
+
+
+
+
 
 
   </body>
